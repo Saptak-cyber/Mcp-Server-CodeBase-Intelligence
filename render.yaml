@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: codebase-intelligence-mcp
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.server --mode http --port 10000
+    envVars:
+      - key: QDRANT_URL
+        sync: false
+      - key: QDRANT_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: NEON_DATABASE_URL
+        sync: false
+      - key: UPSTASH_REDIS_URL
+        sync: false
+      - key: UPSTASH_REDIS_TOKEN
+        sync: false
+      - key: MCP_SERVER_MODE
+        value: http
+      - key: PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ENABLE_CACHING
+        value: true
+      - key: ENABLE_METRICS
+        value: true
+    plan: starter
+    healthCheckPath: /health
