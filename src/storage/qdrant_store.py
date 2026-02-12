@@ -2,6 +2,7 @@
 
 # type: ignore  # Qdrant client library has complex type definitions
 
+import asyncio
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -41,8 +42,12 @@ class QdrantStore:
             return
 
         try:
-            # Create client
-            self.client = QdrantClient(url=self.url, api_key=self.api_key)
+            # Create client with generous timeout for remote connections
+            self.client = QdrantClient(
+                url=self.url,
+                api_key=self.api_key,
+                timeout=300,
+            )
 
             # Check if collection exists
             collections = self.client.get_collections().collections
@@ -66,8 +71,9 @@ class QdrantStore:
         vectors: List[List[float]],
         payloads: List[Dict[str, Any]],
         ids: Optional[List[str]] = None,
+        batch_size: int = 64,
     ) -> None:
-        """Insert vectors with metadata."""
+        """Insert vectors with metadata, batched to avoid timeouts."""
         if not self._enabled or not self.client:
             logger.warning("Qdrant not available, skipping insert")
             return
@@ -78,14 +84,41 @@ class QdrantStore:
 
                 ids = [str(uuid.uuid4()) for _ in range(len(vectors))]
 
-            points = [
-                PointStruct(id=id_, vector=vector, payload=payload)
-                for id_, vector, payload in zip(ids, vectors, payloads)
-            ]
+            total = len(vectors)
+            inserted = 0
 
-            self.client.upsert(collection_name=self.collection_name, points=points)
+            for i in range(0, total, batch_size):
+                batch_ids = ids[i : i + batch_size]
+                batch_vectors = vectors[i : i + batch_size]
+                batch_payloads = payloads[i : i + batch_size]
 
-            logger.info(f"Inserted {len(vectors)} vectors into Qdrant")
+                points = [
+                    PointStruct(id=id_, vector=vector, payload=payload)
+                    for id_, vector, payload in zip(batch_ids, batch_vectors, batch_payloads)
+                ]
+
+                # Retry with exponential backoff for transient failures
+                for attempt in range(3):
+                    try:
+                        self.client.upsert(
+                            collection_name=self.collection_name, points=points
+                        )
+                        break
+                    except Exception as e:
+                        if attempt < 2:
+                            wait = 2 ** attempt
+                            logger.warning(
+                                f"Qdrant upsert attempt {attempt + 1} failed, retrying in {wait}s",
+                                error=str(e),
+                            )
+                            await asyncio.sleep(wait)
+                        else:
+                            raise
+
+                inserted += len(points)
+                logger.info(f"Inserted batch {i // batch_size + 1} ({inserted}/{total} vectors)")
+
+            logger.info(f"Inserted {total} vectors into Qdrant")
         except Exception as e:
             logger.error("Failed to insert vectors", error=str(e))
             raise
