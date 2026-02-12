@@ -1,6 +1,5 @@
 """Clone type classification."""
 
-from typing import Dict, Any
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)

@@ -5,7 +5,6 @@ from ..storage.storage_manager import StorageManager
 from ..parsers.tree_sitter_manager import TreeSitterManager
 from ..utils.file_utils import FileUtils
 from ..utils.logging import get_logger
-import json
 
 logger = get_logger(__name__)
 
@@ -143,7 +142,7 @@ class DependencyGraphAnalyzer:
                 {"from_file": from_file, "to_module": to_module},
             )
         except Exception as e:
-            logger.warning(f"Failed to create dependency", error=str(e))
+            logger.warning("Failed to create dependency", error=str(e))
 
     def _generate_mermaid_graph(self, dependencies: List[Dict[str, str]]) -> str:
         """Generate Mermaid diagram for dependencies."""

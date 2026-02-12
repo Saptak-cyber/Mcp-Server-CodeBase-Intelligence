@@ -1,7 +1,6 @@
 """File utility functions."""
 
 import os
-import asyncio
 import aiofiles
 from pathlib import Path
 from typing import List, Optional, AsyncIterator

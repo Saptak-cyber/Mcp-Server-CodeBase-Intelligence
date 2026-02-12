@@ -3,7 +3,6 @@
 from typing import Dict, Any, List
 from ..storage.storage_manager import StorageManager
 from ..search.embeddings import EmbeddingGenerator
-from ..utils.file_utils import FileUtils
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -25,7 +24,6 @@ class SimilarityDetector:
             logger.info(f"Detecting duplicates in {path}")
 
             duplicate_groups = []
-            processed_chunks = []
 
             # Get all indexed code chunks for this path
             # Query Qdrant for chunks

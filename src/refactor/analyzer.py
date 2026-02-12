@@ -2,7 +2,6 @@
 
 from typing import Dict, Any
 from ..storage.storage_manager import StorageManager
-from ..utils.file_utils import FileUtils
 from .suggestions import RefactoringSuggester
 from ..utils.logging import get_logger
 

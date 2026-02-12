@@ -1,6 +1,5 @@
 """Configuration management for the MCP server."""
 
-import os
 from typing import Optional
 from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings

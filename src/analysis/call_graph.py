@@ -1,6 +1,6 @@
 """Call graph analyzer."""
 
-from typing import Dict, Any, List
+from typing import Dict, List
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)

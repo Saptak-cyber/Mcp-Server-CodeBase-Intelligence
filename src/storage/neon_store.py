@@ -1,6 +1,5 @@
 """Neon PostgreSQL storage for metadata and metrics."""
 
-import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker

@@ -1,6 +1,6 @@
 """Analysis tools for code metrics and dependencies."""
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from ..storage.storage_manager import StorageManager
 from ..analysis.dependency_graph import DependencyGraphAnalyzer
 from ..metrics.calculator import MetricsCalculator

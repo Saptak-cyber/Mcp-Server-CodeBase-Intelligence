@@ -123,7 +123,7 @@ class IndexingTools:
             stats["time_taken_seconds"] = round(elapsed, 2)
             stats["files_per_second"] = round(stats["files_processed"] / elapsed, 2)
 
-            logger.info(f"Indexing completed", stats=stats)
+            logger.info("Indexing completed", stats=stats)
             return {"success": True, "stats": stats}
 
         except Exception as e:

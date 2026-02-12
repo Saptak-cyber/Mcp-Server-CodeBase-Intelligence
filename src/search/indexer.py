@@ -1,6 +1,6 @@
 """Code indexer for building search indices."""
 
-from typing import List, Dict, Any
+from typing import Dict, Any
 from .embeddings import EmbeddingGenerator
 from .chunker import CodeChunker
 from ..storage.qdrant_store import QdrantStore

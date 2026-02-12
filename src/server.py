@@ -2,7 +2,7 @@
 
 import asyncio
 import click
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 from prometheus_client import Counter, Histogram, start_http_server
@@ -10,7 +10,6 @@ from prometheus_client import Counter, Histogram, start_http_server
 from .config import get_settings
 from .utils.logging import setup_logging, get_logger
 from .storage.storage_manager import get_storage_manager
-from .utils.validation import validate_path, validate_languages
 
 logger = get_logger(__name__)
 

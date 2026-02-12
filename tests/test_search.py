@@ -46,13 +46,6 @@ async def test_code_chunking(chunker):
     """Test code chunking."""
     # This is a simplified test
     # In reality, we need a parsed tree
-    code = """
-def function1():
-    pass
-
-def function2():
-    pass
-"""
     # Would need proper tree for full test
     # chunks = await chunker.chunk_code(code, tree, "test.py", "python")
     # assert len(chunks) > 0

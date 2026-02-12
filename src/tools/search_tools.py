@@ -1,6 +1,6 @@
 """Search tools for code querying."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from ..storage.storage_manager import StorageManager
 from ..search.embeddings import EmbeddingGenerator
 from ..utils.logging import get_logger

@@ -79,14 +79,14 @@ class EmbeddingGenerator:
                     logger.info(f"Generated {len(batch)} embeddings")
                     
             except Exception as e:
-                logger.error(f"Batch embedding failed", error=str(e))
+                logger.error("Batch embedding failed", error=str(e))
                 # Fallback to individual embeddings
                 for text in batch:
                     try:
                         emb = await self.embed(text)
                         all_embeddings.append(emb)
                     except Exception as e2:
-                        logger.error(f"Individual embedding failed", error=str(e2))
+                        logger.error("Individual embedding failed", error=str(e2))
                         # Use zero vector as fallback
                         all_embeddings.append([0.0] * 768)
 

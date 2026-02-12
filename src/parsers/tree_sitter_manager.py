@@ -1,7 +1,6 @@
 """Tree-sitter parser manager for multi-language support."""
 
-from typing import Optional, Dict, Any
-import tree_sitter
+from typing import Dict, Any
 from tree_sitter import Language, Parser, Query, QueryCursor
 from .language_configs import get_language_config
 from ..utils.logging import get_logger
