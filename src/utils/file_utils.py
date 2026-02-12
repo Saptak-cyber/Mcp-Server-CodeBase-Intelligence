@@ -59,7 +59,7 @@ class FileUtils:
     ) -> AsyncIterator[tuple[str, str]]:
         """
         Scan directory for source files.
-        
+
         Yields:
             Tuple of (file_path, language)
         """

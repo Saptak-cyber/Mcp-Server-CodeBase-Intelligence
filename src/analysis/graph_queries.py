@@ -14,9 +14,7 @@ class GraphQueryExecutor:
         """Initialize query executor."""
         self.neo4j = neo4j
 
-    async def find_shortest_path(
-        self, from_node: str, to_node: str
-    ) -> List[Dict[str, Any]]:
+    async def find_shortest_path(self, from_node: str, to_node: str) -> List[Dict[str, Any]]:
         """Find shortest path between nodes."""
         query = """
         MATCH path = shortestPath(

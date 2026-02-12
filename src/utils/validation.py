@@ -42,9 +42,7 @@ class LanguageValidator(BaseModel):
         """Validate language is supported."""
         supported = ["python", "javascript", "typescript", "java", "go"]
         if v.lower() not in supported:
-            raise ValueError(
-                f"Unsupported language: {v}. Supported: {', '.join(supported)}"
-            )
+            raise ValueError(f"Unsupported language: {v}. Supported: {', '.join(supported)}")
         return v.lower()
 
 

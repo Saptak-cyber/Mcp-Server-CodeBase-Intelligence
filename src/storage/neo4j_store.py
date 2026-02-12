@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 class Neo4jStore:
     """Neo4j Cloud graph database manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Neo4j driver."""
         settings = get_settings()
         self.driver: Optional[AsyncDriver] = None
@@ -26,11 +26,9 @@ class Neo4jStore:
         if not self._enabled:
             logger.warning("Neo4j not configured, skipping connection")
             return
-            
+
         try:
-            self.driver = AsyncGraphDatabase.driver(
-                self.uri, auth=(self.username, self.password)
-            )
+            self.driver = AsyncGraphDatabase.driver(self.uri, auth=(self.username, self.password))
             await self.driver.verify_connectivity()
             logger.info("Neo4j connection established")
         except Exception as e:
@@ -50,10 +48,11 @@ class Neo4jStore:
         if not self._enabled:
             logger.warning("Neo4j not available")
             return []
-            
+
         if not self.driver:
             await self.connect()
 
+        assert self.driver is not None  # Should be set by connect()
         try:
             async with self.driver.session(database=self.database) as session:
                 result = await session.run(query, parameters or {})
@@ -63,9 +62,7 @@ class Neo4jStore:
             logger.error("Query execution failed", query=query, error=str(e))
             raise
 
-    async def create_node(
-        self, label: str, properties: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def create_node(self, label: str, properties: Dict[str, Any]) -> Dict[str, Any]:
         """Create a node in the graph."""
         props_str = ", ".join([f"{k}: ${k}" for k in properties.keys()])
         query = f"CREATE (n:{label} {{{props_str}}}) RETURN n"
@@ -115,9 +112,7 @@ class Neo4jStore:
         """
         return await self.execute_query(query)
 
-    async def get_dependencies(
-        self, node_name: str, depth: int = 3
-    ) -> List[Dict[str, Any]]:
+    async def get_dependencies(self, node_name: str, depth: int = 3) -> List[Dict[str, Any]]:
         """Get dependencies for a node up to specified depth."""
         query = f"""
         MATCH path = (n:Module {{name: $name}})-[:DEPENDS_ON*1..{depth}]->(dep)
@@ -155,7 +150,7 @@ class Neo4jStore:
         """Check Neo4j connection health."""
         if not self._enabled:
             return False
-            
+
         try:
             if not self.driver:
                 await self.connect()

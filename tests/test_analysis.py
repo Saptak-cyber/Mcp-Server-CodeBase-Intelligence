@@ -10,7 +10,7 @@ async def test_dependency_analyzer_initialization():
     """Test dependency analyzer initialization."""
     storage_mock = Mock()
     storage_mock.neo4j = Mock()
-    
+
     analyzer = DependencyGraphAnalyzer(storage_mock)
     assert analyzer is not None
 
@@ -21,8 +21,8 @@ async def test_call_graph_generation():
     storage_mock = Mock()
     storage_mock.neo4j = Mock()
     storage_mock.neo4j.execute_query = AsyncMock(return_value=[])
-    
+
     analyzer = DependencyGraphAnalyzer(storage_mock)
     result = await analyzer.get_call_graph("test_function", max_depth=2)
-    
+
     assert "success" in result

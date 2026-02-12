@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 class TreeSitterManager:
     """Manager for tree-sitter parsers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize tree-sitter manager."""
         self._parsers: Dict[str, Parser] = {}
         self._languages: Dict[str, Language] = {}

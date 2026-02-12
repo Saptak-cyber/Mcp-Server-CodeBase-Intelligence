@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class DocumentationGenerator:
     """Generate documentation from code."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize documentation generator."""
         self.symbol_extractor = SymbolExtractor()
         self.template = MarkdownTemplate()

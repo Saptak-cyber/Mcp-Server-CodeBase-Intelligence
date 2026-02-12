@@ -31,7 +31,7 @@ class SearchTools:
             cached = await self.storage.cache.get(cache_key)
             if cached:
                 logger.info("Returning cached search results")
-                return cached
+                return cached  # type: ignore[no-any-return]
 
             # Generate query embedding
             query_vector = await self.embedder.embed(query)

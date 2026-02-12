@@ -2,8 +2,13 @@
 
 from typing import List, Dict, Any, Optional
 from datetime import datetime
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+    AsyncEngine,
+)
+from sqlalchemy.orm import declarative_base, DeclarativeMeta
 from sqlalchemy import (
     Column,
     Integer,
@@ -20,10 +25,10 @@ from ..config import get_settings
 
 logger = get_logger(__name__)
 
-Base = declarative_base()
+Base: DeclarativeMeta = declarative_base()  # type: ignore[assignment]
 
 
-class File(Base):
+class File(Base):  # type: ignore[misc, valid-type]
     """File metadata table."""
 
     __tablename__ = "files"
@@ -38,7 +43,7 @@ class File(Base):
     __table_args__ = (Index("idx_language_path", "language", "path"),)
 
 
-class Metric(Base):
+class Metric(Base):  # type: ignore[misc, valid-type]
     """Code metrics table."""
 
     __tablename__ = "metrics"
@@ -61,7 +66,7 @@ class Metric(Base):
     )
 
 
-class ComplexityHotspot(Base):
+class ComplexityHotspot(Base):  # type: ignore[misc, valid-type]
     """Cache for high complexity locations."""
 
     __tablename__ = "complexity_hotspots"
@@ -78,30 +83,31 @@ class ComplexityHotspot(Base):
 class NeonStore:
     """Neon PostgreSQL storage manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Neon connection."""
         settings = get_settings()
         self.db_url = settings.neon_database_url
         self._enabled = bool(self.db_url)
-        self.engine = None
-        self.async_session = None
-        
+        self.engine: Optional[AsyncEngine] = None
+        self.async_session: Optional[async_sessionmaker[AsyncSession]] = None
+
         if self._enabled:
             # Convert postgresql:// to postgresql+asyncpg://
             db_url = self.db_url.replace("postgresql://", "postgresql+asyncpg://")
-            
+
             # Convert psycopg2 SSL parameters to asyncpg format
             # asyncpg doesn't support 'sslmode' but uses 'ssl' instead
             db_url = db_url.replace("sslmode=require", "ssl=require")
             db_url = db_url.replace("sslmode=prefer", "ssl=prefer")
             db_url = db_url.replace("sslmode=allow", "ssl=true")
             db_url = db_url.replace("sslmode=disable", "ssl=false")
-            
+
             # Remove channel_binding parameter (not supported by asyncpg)
             if "channel_binding=" in db_url:
                 import re
-                db_url = re.sub(r'[&?]channel_binding=[^&]*', '', db_url)
-            
+
+                db_url = re.sub(r"[&?]channel_binding=[^&]*", "", db_url)
+
             self.engine = create_async_engine(db_url, echo=False, pool_size=5, max_overflow=10)
             self.async_session = async_sessionmaker(
                 self.engine, class_=AsyncSession, expire_on_commit=False
@@ -112,7 +118,7 @@ class NeonStore:
         if not self._enabled or not self.engine:
             logger.warning("Neon not configured, skipping initialization")
             return
-            
+
         try:
             async with self.engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
@@ -125,13 +131,12 @@ class NeonStore:
         """Insert or update file metadata."""
         if not self._enabled or not self.async_session:
             return
-            
+
+        assert self.async_session is not None
         async with self.async_session() as session:
             try:
                 # Check if file exists
-                result = await session.execute(
-                    select(File).where(File.path == file_data["path"])
-                )
+                result = await session.execute(select(File).where(File.path == file_data["path"]))
                 existing = result.scalar_one_or_none()
 
                 if existing:
@@ -151,7 +156,9 @@ class NeonStore:
         """Insert code metrics."""
         if not self._enabled or not self.async_session:
             return
-            
+
+        assert self.async_session is not None
+
         async with self.async_session() as session:
             try:
                 metrics = [Metric(**data) for data in metrics_data]
@@ -167,11 +174,9 @@ class NeonStore:
         """Get metrics for a file."""
         if not self._enabled or not self.async_session:
             return []
-            
+        assert self.async_session is not None
         async with self.async_session() as session:
-            result = await session.execute(
-                select(Metric).where(Metric.file_path == file_path)
-            )
+            result = await session.execute(select(Metric).where(Metric.file_path == file_path))
             metrics = result.scalars().all()
             return [
                 {
@@ -191,6 +196,10 @@ class NeonStore:
         self, min_complexity: float = 10.0, limit: int = 20
     ) -> List[Dict[str, Any]]:
         """Get high complexity code locations."""
+        if not self._enabled or not self.async_session:
+            return []
+
+        assert self.async_session is not None
         async with self.async_session() as session:
             result = await session.execute(
                 select(ComplexityHotspot)
@@ -212,6 +221,10 @@ class NeonStore:
 
     async def update_hotspots(self, hotspots_data: List[Dict[str, Any]]) -> None:
         """Update complexity hotspots."""
+        if not self._enabled or not self.async_session:
+            return
+
+        assert self.async_session is not None
         async with self.async_session() as session:
             try:
                 # Clear old hotspots
@@ -226,10 +239,9 @@ class NeonStore:
                 logger.error("Failed to update hotspots", error=str(e))
                 raise
 
-    async def get_indexed_files(
-        self, language: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+    async def get_indexed_files(self, language: Optional[str] = None) -> List[Dict[str, Any]]:
         """Get list of indexed files."""
+        assert self.async_session is not None
         async with self.async_session() as session:
             query = select(File)
             if language:
@@ -249,7 +261,7 @@ class NeonStore:
         """Check Neon connection health."""
         if not self._enabled or not self.async_session:
             return False
-            
+
         try:
             async with self.async_session() as session:
                 await session.execute(select(1))

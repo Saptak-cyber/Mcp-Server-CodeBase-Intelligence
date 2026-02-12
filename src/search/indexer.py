@@ -20,9 +20,7 @@ class CodeIndexer:
         self.chunker = CodeChunker()
         self.parser = TreeSitterManager()
 
-    async def index_file(
-        self, file_path: str, code: str, language: str
-    ) -> Dict[str, Any]:
+    async def index_file(self, file_path: str, code: str, language: str) -> Dict[str, Any]:
         """Index a single file."""
         try:
             # Parse code

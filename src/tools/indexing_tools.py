@@ -58,9 +58,7 @@ class IndexingTools:
                     tree = await self.parser.parse(content, language)
 
                     # Chunk code
-                    chunks = await self.chunker.chunk_code(
-                        content, tree, file_path, language
-                    )
+                    chunks = await self.chunker.chunk_code(content, tree, file_path, language)
 
                     if chunks:
                         # Generate embeddings
@@ -107,9 +105,7 @@ class IndexingTools:
 
                 # Batch insert to Qdrant
                 if len(all_vectors) >= 100:
-                    await self.storage.qdrant.insert_vectors(
-                        all_vectors, all_payloads
-                    )
+                    await self.storage.qdrant.insert_vectors(all_vectors, all_payloads)
                     stats["vectors_inserted"] += len(all_vectors)
                     all_vectors = []
                     all_payloads = []
@@ -120,8 +116,8 @@ class IndexingTools:
                 stats["vectors_inserted"] += len(all_vectors)
 
             elapsed = time.time() - start_time
-            stats["time_taken_seconds"] = round(elapsed, 2)
-            stats["files_per_second"] = round(stats["files_processed"] / elapsed, 2)
+            stats["time_taken_seconds"] = int(round(elapsed, 2))
+            stats["files_per_second"] = int(round(stats["files_processed"] / elapsed, 2))
 
             logger.info("Indexing completed", stats=stats)
             return {"success": True, "stats": stats}

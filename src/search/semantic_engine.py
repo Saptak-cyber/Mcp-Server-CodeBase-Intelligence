@@ -40,9 +40,7 @@ class SemanticSearchEngine:
 
         return results
 
-    async def search_similar_code(
-        self, code: str, top_k: int = 10
-    ) -> List[Dict[str, Any]]:
+    async def search_similar_code(self, code: str, top_k: int = 10) -> List[Dict[str, Any]]:
         """Find similar code snippets."""
         code_embedding = await self.embedder.embed(code)
 

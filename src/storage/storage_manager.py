@@ -15,13 +15,13 @@ class StorageManager:
 
     _instance: Optional["StorageManager"] = None
 
-    def __new__(cls):
+    def __new__(cls) -> "StorageManager":
         """Singleton pattern."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize all storage clients."""
         if hasattr(self, "_initialized"):
             return

@@ -1,5 +1,7 @@
 """Upstash Redis caching layer."""
 
+# type: ignore  # Upstash Redis library has incomplete type stubs
+
 import json
 import pickle
 from typing import Any, Optional
@@ -13,7 +15,7 @@ logger = get_logger(__name__)
 class UpstashCache:
     """Upstash Redis cache manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Upstash Redis client."""
         settings = get_settings()
         self.url = settings.upstash_redis_url
@@ -21,7 +23,7 @@ class UpstashCache:
         self.default_ttl = settings.cache_ttl_seconds
         self.enabled = settings.enable_caching and bool(self.url and self.token)
         self.client = None
-        
+
         if self.enabled:
             try:
                 self.client = Redis(url=self.url, token=self.token)
@@ -48,9 +50,7 @@ class UpstashCache:
             logger.warning(f"Cache get failed for key: {key}", error=str(e))
             return None
 
-    async def set(
-        self, key: str, value: Any, ttl: Optional[int] = None
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in cache with TTL."""
         if not self.enabled or not self.client:
             return False
@@ -142,9 +142,7 @@ class UpstashCache:
             logger.warning("Cache get_many failed", error=str(e))
             return {}
 
-    async def set_many(
-        self, items: dict[str, Any], ttl: Optional[int] = None
-    ) -> bool:
+    async def set_many(self, items: dict[str, Any], ttl: Optional[int] = None) -> bool:
         """Set multiple keys at once."""
         if not self.enabled:
             return False
@@ -173,7 +171,7 @@ class UpstashCache:
         """Check Redis connection health."""
         if not self.enabled or not self.client:
             return False
-            
+
         try:
             self.client.ping()
             return True

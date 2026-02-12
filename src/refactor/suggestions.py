@@ -9,9 +9,7 @@ logger = get_logger(__name__)
 class RefactoringSuggester:
     """Generate refactoring suggestions."""
 
-    async def suggest(
-        self, file_path: str, metrics: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    async def suggest(self, file_path: str, metrics: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Generate refactoring suggestions based on metrics."""
         suggestions = []
 

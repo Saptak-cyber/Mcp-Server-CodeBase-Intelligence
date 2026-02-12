@@ -1,8 +1,8 @@
 """Configuration management for the MCP server."""
 
 from typing import Optional
-from pydantic import Field, ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     max_workers: int = Field(default=4, description="Maximum worker threads")
     cache_ttl_seconds: int = Field(default=3600, description="Cache TTL in seconds")
 
-    model_config = ConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 
 # Global settings instance

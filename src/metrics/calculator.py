@@ -72,9 +72,7 @@ class MetricsCalculator:
                     "file_path": file_path,
                     "entity_type": "file",
                     "entity_name": os.path.basename(file_path),
-                    "cyclomatic_complexity": sum(
-                        item.complexity for item in cc_results
-                    )
+                    "cyclomatic_complexity": sum(item.complexity for item in cc_results)
                     / max(len(cc_results), 1),
                     "maintainability_index": mi_score,
                     "sloc": raw.sloc,
@@ -91,8 +89,7 @@ class MetricsCalculator:
                 "metrics": {
                     "maintainability_index": round(mi_score, 2),
                     "average_complexity": round(
-                        sum(item.complexity for item in cc_results)
-                        / max(len(cc_results), 1),
+                        sum(item.complexity for item in cc_results) / max(len(cc_results), 1),
                         2,
                     ),
                     "total_sloc": raw.sloc,
@@ -100,15 +97,9 @@ class MetricsCalculator:
                     "blank_lines": raw.blank,
                     "complexity_breakdown": complexity_scores,
                     "halstead": {
-                        "volume": round(halstead.total.volume, 2)
-                        if halstead.total
-                        else 0,
-                        "difficulty": round(halstead.total.difficulty, 2)
-                        if halstead.total
-                        else 0,
-                        "effort": round(halstead.total.effort, 2)
-                        if halstead.total
-                        else 0,
+                        "volume": round(halstead.total.volume, 2) if halstead.total else 0,
+                        "difficulty": round(halstead.total.difficulty, 2) if halstead.total else 0,
+                        "effort": round(halstead.total.effort, 2) if halstead.total else 0,
                     },
                 },
             }
@@ -124,9 +115,7 @@ class MetricsCalculator:
         total_mi = 0
         high_complexity_files = []
 
-        async for file_path, language in FileUtils.scan_directory(
-            directory, ["python"]
-        ):
+        async for file_path, language in FileUtils.scan_directory(directory, ["python"]):
             try:
                 result = await self._compute_file_metrics(file_path)
                 if result.get("success"):
@@ -151,9 +140,7 @@ class MetricsCalculator:
             "directory": directory,
             "summary": {
                 "total_files": total_files,
-                "average_complexity": round(
-                    total_complexity / max(total_files, 1), 2
-                ),
+                "average_complexity": round(total_complexity / max(total_files, 1), 2),
                 "average_maintainability": round(total_mi / max(total_files, 1), 2),
                 "high_complexity_files": high_complexity_files[:10],
             },

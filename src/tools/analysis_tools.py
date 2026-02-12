@@ -47,9 +47,7 @@ class AnalysisTools:
     ) -> Dict[str, Any]:
         """Detect duplicate code."""
         try:
-            return await self.similarity_detector.detect_duplicates(
-                path, similarity_threshold
-            )
+            return await self.similarity_detector.detect_duplicates(path, similarity_threshold)
         except Exception as e:
             logger.error("Duplicate detection failed", error=str(e))
             return {"success": False, "error": str(e)}
@@ -70,14 +68,10 @@ class AnalysisTools:
             logger.error("Refactoring analysis failed", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def get_call_graph(
-        self, function_name: str, max_depth: int = 2
-    ) -> Dict[str, Any]:
+    async def get_call_graph(self, function_name: str, max_depth: int = 2) -> Dict[str, Any]:
         """Get call graph for a function."""
         try:
-            return await self.dependency_analyzer.get_call_graph(
-                function_name, max_depth
-            )
+            return await self.dependency_analyzer.get_call_graph(function_name, max_depth)
         except Exception as e:
             logger.error("Call graph generation failed", error=str(e))
             return {"success": False, "error": str(e)}

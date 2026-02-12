@@ -82,9 +82,7 @@ class SimilarityDetector:
             logger.error("Duplicate detection failed", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def _check_similarity(
-        self, code1: str, code2: str, threshold: float
-    ) -> bool:
+    async def _check_similarity(self, code1: str, code2: str, threshold: float) -> bool:
         """Check if two code snippets are similar."""
         try:
             # Generate embeddings

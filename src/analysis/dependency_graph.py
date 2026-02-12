@@ -17,9 +17,7 @@ class DependencyGraphAnalyzer:
         self.storage = storage
         self.parser = TreeSitterManager()
 
-    async def analyze(
-        self, path: str, language: str, depth: int = 3
-    ) -> Dict[str, Any]:
+    async def analyze(self, path: str, language: str, depth: int = 3) -> Dict[str, Any]:
         """Analyze dependencies for a codebase."""
         try:
             logger.info(f"Analyzing dependencies for {path}")
@@ -28,9 +26,7 @@ class DependencyGraphAnalyzer:
             files_processed = 0
             dependencies = []
 
-            async for file_path, file_lang in FileUtils.scan_directory(
-                path, [language]
-            ):
+            async for file_path, file_lang in FileUtils.scan_directory(path, [language]):
                 try:
                     # Read and parse file
                     content = await FileUtils.read_file(file_path)
@@ -45,9 +41,7 @@ class DependencyGraphAnalyzer:
                     # Create dependency relationships
                     for import_stmt in imports:
                         await self._create_dependency(file_path, import_stmt)
-                        dependencies.append(
-                            {"from": file_path, "to": import_stmt}
-                        )
+                        dependencies.append({"from": file_path, "to": import_stmt})
 
                     files_processed += 1
 
@@ -73,9 +67,7 @@ class DependencyGraphAnalyzer:
             logger.error("Dependency analysis failed", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def get_call_graph(
-        self, function_name: str, max_depth: int = 2
-    ) -> Dict[str, Any]:
+    async def get_call_graph(self, function_name: str, max_depth: int = 2) -> Dict[str, Any]:
         """Generate call graph for a function."""
         try:
             # Query Neo4j for function calls
@@ -85,9 +77,7 @@ class DependencyGraphAnalyzer:
             LIMIT 100
             """
 
-            results = await self.storage.neo4j.execute_query(
-                query, {"name": function_name}
-            )
+            results = await self.storage.neo4j.execute_query(query, {"name": function_name})
 
             # Format results
             call_graph = {"root": function_name, "calls": []}
@@ -95,7 +85,7 @@ class DependencyGraphAnalyzer:
             for result in results:
                 path = result.get("path")
                 if path:
-                    call_graph["calls"].append(self._format_path(path))
+                    call_graph["calls"].append(self._format_path(path))  # type: ignore[attr-defined]
 
             return {
                 "success": True,
@@ -108,9 +98,7 @@ class DependencyGraphAnalyzer:
             logger.error("Call graph generation failed", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def _create_file_node(
-        self, file_path: str, language: str, size: int
-    ) -> None:
+    async def _create_file_node(self, file_path: str, language: str, size: int) -> None:
         """Create file node in Neo4j."""
         await self.storage.neo4j.create_node(
             "File",
@@ -147,7 +135,7 @@ class DependencyGraphAnalyzer:
     def _generate_mermaid_graph(self, dependencies: List[Dict[str, str]]) -> str:
         """Generate Mermaid diagram for dependencies."""
         lines = ["graph TD"]
-        
+
         # Limit to first 20 dependencies for readability
         for dep in dependencies[:20]:
             from_node = self._sanitize_node_name(dep["from"])
@@ -160,7 +148,7 @@ class DependencyGraphAnalyzer:
         """Generate Mermaid diagram for call graph."""
         lines = ["graph TD"]
         root = self._sanitize_node_name(call_graph["root"])
-        
+
         for call in call_graph.get("calls", [])[:20]:
             if isinstance(call, str):
                 target = self._sanitize_node_name(call)
@@ -172,6 +160,7 @@ class DependencyGraphAnalyzer:
         """Sanitize node name for Mermaid."""
         # Remove special characters and paths
         import os
+
         name = os.path.basename(name)
         name = name.replace(".", "_").replace("/", "_").replace("-", "_")
         return name[:50]  # Limit length

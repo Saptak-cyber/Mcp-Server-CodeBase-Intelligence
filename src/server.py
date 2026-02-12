@@ -21,7 +21,7 @@ tool_duration = Histogram("mcp_tool_duration", "Tool execution time", ["tool_nam
 class CodebaseIntelligenceMCP:
     """Codebase Intelligence MCP Server."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the MCP server."""
         self.server = Server("codebase-intelligence")
         self.settings = get_settings()
@@ -30,7 +30,7 @@ class CodebaseIntelligenceMCP:
 
     def _setup_tools(self) -> None:
         """Register all MCP tools."""
-        
+
         @self.server.list_tools()
         async def list_tools() -> list[Tool]:
             """List available tools."""
@@ -63,8 +63,15 @@ class CodebaseIntelligenceMCP:
                         "type": "object",
                         "properties": {
                             "query": {"type": "string", "description": "Search query"},
-                            "language_filter": {"type": "string", "description": "Filter by language"},
-                            "top_k": {"type": "integer", "description": "Number of results", "default": 10},
+                            "language_filter": {
+                                "type": "string",
+                                "description": "Filter by language",
+                            },
+                            "top_k": {
+                                "type": "integer",
+                                "description": "Number of results",
+                                "default": 10,
+                            },
                         },
                         "required": ["query"],
                     },
@@ -77,7 +84,11 @@ class CodebaseIntelligenceMCP:
                         "properties": {
                             "path": {"type": "string", "description": "Path to analyze"},
                             "language": {"type": "string", "description": "Programming language"},
-                            "depth": {"type": "integer", "description": "Max traversal depth", "default": 3},
+                            "depth": {
+                                "type": "integer",
+                                "description": "Max traversal depth",
+                                "default": 3,
+                            },
                         },
                         "required": ["path", "language"],
                     },
@@ -88,7 +99,10 @@ class CodebaseIntelligenceMCP:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "file_path": {"type": "string", "description": "Path to file or directory"},
+                            "file_path": {
+                                "type": "string",
+                                "description": "Path to file or directory",
+                            },
                         },
                         "required": ["file_path"],
                     },
@@ -143,9 +157,19 @@ class CodebaseIntelligenceMCP:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "question": {"type": "string", "description": "Question about the codebase"},
-                            "top_k": {"type": "integer", "description": "Number of results", "default": 5},
-                            "language_filter": {"type": "string", "description": "Filter by language"},
+                            "question": {
+                                "type": "string",
+                                "description": "Question about the codebase",
+                            },
+                            "top_k": {
+                                "type": "integer",
+                                "description": "Number of results",
+                                "default": 5,
+                            },
+                            "language_filter": {
+                                "type": "string",
+                                "description": "Filter by language",
+                            },
                         },
                         "required": ["question"],
                     },
@@ -156,8 +180,15 @@ class CodebaseIntelligenceMCP:
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "function_name": {"type": "string", "description": "Function to analyze"},
-                            "max_depth": {"type": "integer", "description": "Max depth", "default": 2},
+                            "function_name": {
+                                "type": "string",
+                                "description": "Function to analyze",
+                            },
+                            "max_depth": {
+                                "type": "integer",
+                                "description": "Max depth",
+                                "default": 2,
+                            },
                         },
                         "required": ["function_name"],
                     },
@@ -184,11 +215,11 @@ class CodebaseIntelligenceMCP:
         async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             """Handle tool calls."""
             tool_calls.labels(tool_name=name).inc()
-            
+
             with tool_duration.labels(tool_name=name).time():
                 try:
                     logger.info(f"Tool called: {name}", arguments=arguments)
-                    
+
                     if name == "index_codebase":
                         result = await self._index_codebase(arguments)
                     elif name == "semantic_search":
@@ -211,9 +242,9 @@ class CodebaseIntelligenceMCP:
                         result = await self._find_symbol(arguments)
                     else:
                         result = {"error": f"Unknown tool: {name}"}
-                    
+
                     return [TextContent(type="text", text=str(result))]
-                    
+
                 except Exception as e:
                     logger.error(f"Tool execution failed: {name}", error=str(e))
                     return [TextContent(type="text", text=f"Error: {str(e)}")]
@@ -222,7 +253,7 @@ class CodebaseIntelligenceMCP:
         """Index a codebase directory."""
         # Import here to avoid circular imports
         from .tools.indexing_tools import IndexingTools
-        
+
         indexer = IndexingTools(self.storage)
         return await indexer.index_codebase(
             path=args["path"],
@@ -233,7 +264,7 @@ class CodebaseIntelligenceMCP:
     async def _semantic_search(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Perform semantic search."""
         from .tools.search_tools import SearchTools
-        
+
         searcher = SearchTools(self.storage)
         return await searcher.semantic_search(
             query=args["query"],
@@ -244,7 +275,7 @@ class CodebaseIntelligenceMCP:
     async def _analyze_dependencies(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze dependencies."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.analyze_dependencies(
             path=args["path"],
@@ -255,14 +286,14 @@ class CodebaseIntelligenceMCP:
     async def _compute_metrics(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Compute code metrics."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.compute_metrics(file_path=args["file_path"])
 
     async def _detect_duplicates(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Detect duplicate code."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.detect_duplicates(
             path=args["path"],
@@ -272,7 +303,7 @@ class CodebaseIntelligenceMCP:
     async def _generate_docs(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Generate documentation."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.generate_docs(
             path=args["path"],
@@ -282,14 +313,14 @@ class CodebaseIntelligenceMCP:
     async def _suggest_refactorings(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Suggest refactorings."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.suggest_refactorings(file_path=args["file_path"])
 
     async def _ask_codebase(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Answer questions about codebase."""
         from .tools.qa_tools import QATools
-        
+
         qa = QATools(self.storage)
         return await qa.ask_codebase(
             question=args["question"],
@@ -300,7 +331,7 @@ class CodebaseIntelligenceMCP:
     async def _get_call_graph(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Get call graph."""
         from .tools.analysis_tools import AnalysisTools
-        
+
         analyzer = AnalysisTools(self.storage)
         return await analyzer.get_call_graph(
             function_name=args["function_name"],
@@ -310,7 +341,7 @@ class CodebaseIntelligenceMCP:
     async def _find_symbol(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Find symbol."""
         from .tools.search_tools import SearchTools
-        
+
         searcher = SearchTools(self.storage)
         return await searcher.find_symbol(
             symbol_name=args["symbol_name"],
@@ -331,17 +362,16 @@ class CodebaseIntelligenceMCP:
 async def run_stdio_server() -> None:
     """Run server in stdio mode."""
     logger.info("Starting MCP server in stdio mode")
-    
+
     mcp = CodebaseIntelligenceMCP()
     await mcp.initialize()
-    
+
     try:
         from mcp.server.stdio import stdio_server
+
         async with stdio_server() as (read_stream, write_stream):
             await mcp.server.run(
-                read_stream,
-                write_stream,
-                mcp.server.create_initialization_options()
+                read_stream, write_stream, mcp.server.create_initialization_options()
             )
     finally:
         await mcp.cleanup()
@@ -350,52 +380,52 @@ async def run_stdio_server() -> None:
 async def run_http_server(port: int) -> None:
     """Run server in HTTP mode."""
     logger.info(f"Starting MCP server in HTTP mode on port {port}")
-    
+
     mcp = CodebaseIntelligenceMCP()
     await mcp.initialize()
-    
+
     # Start Prometheus metrics server
     settings = get_settings()
     if settings.enable_metrics:
         start_http_server(9090)
         logger.info("Prometheus metrics available on :9090/metrics")
-    
+
     try:
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
         from starlette.routing import Route
         from starlette.responses import JSONResponse
-        
+
         async def health_check(request):
             """Health check endpoint."""
             health = await mcp.storage.health_check()
             status = all(health.values())
-            return JSONResponse({
-                "status": "healthy" if status else "unhealthy",
-                "services": health
-            })
-        
+            return JSONResponse(
+                {"status": "healthy" if status else "unhealthy", "services": health}
+            )
+
         async def handle_sse(request):
             """Handle SSE connection."""
             async with SseServerTransport("/messages") as transport:
                 await mcp.server.run(
                     transport.read_stream,
                     transport.write_stream,
-                    mcp.server.create_initialization_options()
+                    mcp.server.create_initialization_options(),
                 )
-        
+
         app = Starlette(
             routes=[
                 Route("/health", health_check),
                 Route("/sse", handle_sse),
             ]
         )
-        
+
         import uvicorn
+
         await uvicorn.Server(
             uvicorn.Config(app, host="0.0.0.0", port=port, log_level="info")
         ).serve()
-        
+
     finally:
         await mcp.cleanup()
 
@@ -407,7 +437,7 @@ async def run_http_server(port: int) -> None:
 def main(mode: str, port: int, log_level: str) -> None:
     """Start the Codebase Intelligence MCP server."""
     setup_logging(log_level)
-    
+
     if mode == "stdio":
         asyncio.run(run_stdio_server())
     else:

@@ -10,13 +10,11 @@ logger = get_logger(__name__)
 class SymbolExtractor:
     """Extract symbols from code using AST."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize symbol extractor."""
         self.parser = TreeSitterManager()
 
-    async def extract_symbols(
-        self, code: str, language: str
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    async def extract_symbols(self, code: str, language: str) -> Dict[str, List[Dict[str, Any]]]:
         """Extract all symbols from code."""
         try:
             tree = await self.parser.parse(code, language)
@@ -28,7 +26,7 @@ class SymbolExtractor:
             return {
                 "functions": functions,
                 "classes": classes,
-                "imports": imports,
+                "imports": imports,  # type: ignore[dict-item]
             }
         except Exception as e:
             logger.error("Symbol extraction failed", error=str(e))

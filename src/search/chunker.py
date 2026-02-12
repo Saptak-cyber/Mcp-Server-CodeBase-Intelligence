@@ -29,9 +29,7 @@ class CodeChunker:
 
             # Create chunks for functions
             for func in functions:
-                func_code = self._extract_code_segment(
-                    code, func["start_byte"], func["end_byte"]
-                )
+                func_code = self._extract_code_segment(code, func["start_byte"], func["end_byte"])
                 if func_code and len(func_code) <= self.max_chunk_size:
                     chunks.append(
                         {
@@ -47,9 +45,7 @@ class CodeChunker:
 
             # Create chunks for classes
             for cls in classes:
-                cls_code = self._extract_code_segment(
-                    code, cls["start_byte"], cls["end_byte"]
-                )
+                cls_code = self._extract_code_segment(code, cls["start_byte"], cls["end_byte"])
                 if cls_code and len(cls_code) <= self.max_chunk_size:
                     chunks.append(
                         {
@@ -81,9 +77,7 @@ class CodeChunker:
         except Exception:
             return ""
 
-    def _chunk_by_lines(
-        self, code: str, file_path: str, language: str
-    ) -> List[Dict[str, Any]]:
+    def _chunk_by_lines(self, code: str, file_path: str, language: str) -> List[Dict[str, Any]]:
         """Fallback: chunk code by line count."""
         lines = code.split("\n")
         chunks = []

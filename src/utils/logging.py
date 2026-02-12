@@ -16,9 +16,9 @@ def setup_logging(log_level: str = "INFO") -> None:
         "ERROR": logging.ERROR,
         "CRITICAL": logging.CRITICAL,
     }
-    
+
     numeric_level = level_map.get(log_level.upper(), logging.INFO)
-    
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

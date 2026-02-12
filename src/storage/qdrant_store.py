@@ -1,5 +1,7 @@
 """Qdrant Cloud vector store integration."""
 
+# type: ignore  # Qdrant client library has complex type definitions
+
 from typing import List, Dict, Any, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
@@ -19,7 +21,7 @@ logger = get_logger(__name__)
 class QdrantStore:
     """Qdrant Cloud vector store manager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Qdrant client."""
         settings = get_settings()
         self.client = None
@@ -41,7 +43,7 @@ class QdrantStore:
         try:
             # Create client
             self.client = QdrantClient(url=self.url, api_key=self.api_key)
-            
+
             # Check if collection exists
             collections = self.client.get_collections().collections
             exists = any(c.name == self.collection_name for c in collections)
@@ -60,16 +62,20 @@ class QdrantStore:
             self._enabled = False
 
     async def insert_vectors(
-        self, vectors: List[List[float]], payloads: List[Dict[str, Any]], ids: Optional[List[str]] = None
+        self,
+        vectors: List[List[float]],
+        payloads: List[Dict[str, Any]],
+        ids: Optional[List[str]] = None,
     ) -> None:
         """Insert vectors with metadata."""
         if not self._enabled or not self.client:
             logger.warning("Qdrant not available, skipping insert")
             return
-            
+
         try:
             if ids is None:
                 import uuid
+
                 ids = [str(uuid.uuid4()) for _ in range(len(vectors))]
 
             points = [
@@ -94,15 +100,13 @@ class QdrantStore:
         if not self._enabled or not self.client:
             logger.warning("Qdrant not available")
             return []
-            
+
         try:
             query_filter = None
             if filters:
                 conditions = []
                 for key, value in filters.items():
-                    conditions.append(
-                        FieldCondition(key=key, match=MatchValue(value=value))
-                    )
+                    conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
                 if conditions:
                     query_filter = Filter(must=conditions)
 
@@ -130,9 +134,7 @@ class QdrantStore:
         try:
             conditions = []
             for key, value in filters.items():
-                conditions.append(
-                    FieldCondition(key=key, match=MatchValue(value=value))
-                )
+                conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
 
             self.client.delete(
                 collection_name=self.collection_name,
@@ -157,7 +159,7 @@ class QdrantStore:
         """Check Qdrant connection health."""
         if not self._enabled or not self.client:
             return False
-            
+
         try:
             self.client.get_collections()
             return True

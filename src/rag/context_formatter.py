@@ -9,9 +9,7 @@ logger = get_logger(__name__)
 class ContextFormatter:
     """Format retrieved contexts for user consumption."""
 
-    async def format(
-        self, question: str, contexts: List[Dict[str, Any]]
-    ) -> str:
+    async def format(self, question: str, contexts: List[Dict[str, Any]]) -> str:
         """Format contexts into a readable response."""
         if not contexts:
             return "No relevant code found for your question."
@@ -26,17 +24,15 @@ class ContextFormatter:
             lines.append(f"**File**: `{ctx['file_path']}`")
             lines.append(f"**Lines**: {ctx['lines']}")
             lines.append(f"**Type**: {ctx['type']}")
-            if ctx['name']:
+            if ctx["name"]:
                 lines.append(f"**Name**: `{ctx['name']}`")
             lines.append("")
-            lines.append("```" + ctx['language'])
-            lines.append(ctx['code'])
+            lines.append("```" + ctx["language"])
+            lines.append(ctx["code"])
             lines.append("```")
             lines.append("")
 
         lines.append("---")
-        lines.append(
-            "You can use these code snippets to understand and answer your question."
-        )
+        lines.append("You can use these code snippets to understand and answer your question.")
 
         return "\n".join(lines)
