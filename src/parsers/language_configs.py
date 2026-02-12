@@ -1,7 +1,7 @@
 """Language configuration for tree-sitter parsers."""
 
-from dataclasses import dataclass
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Optional
 
 
 @dataclass
@@ -13,6 +13,7 @@ class LanguageConfig:
     function_query: str
     class_query: str
     import_query: str
+    call_query: str = ""  # Query to find function calls
 
 
 # Tree-sitter query patterns for different languages
@@ -34,6 +35,13 @@ LANGUAGE_CONFIGS = {
         (import_statement) @import
         (import_from_statement) @import
         """,
+        call_query="""
+        (call
+          function: (identifier) @call.name)
+        (call
+          function: (attribute
+            attribute: (identifier) @call.name))
+        """,
     ),
     "javascript": LanguageConfig(
         name="javascript",
@@ -51,6 +59,13 @@ LANGUAGE_CONFIGS = {
         """,
         import_query="""
         (import_statement) @import
+        """,
+        call_query="""
+        (call_expression
+          function: (identifier) @call.name)
+        (call_expression
+          function: (member_expression
+            property: (property_identifier) @call.name))
         """,
     ),
     "typescript": LanguageConfig(
@@ -75,6 +90,13 @@ LANGUAGE_CONFIGS = {
         import_query="""
         (import_statement) @import
         """,
+        call_query="""
+        (call_expression
+          function: (identifier) @call.name)
+        (call_expression
+          function: (member_expression
+            property: (property_identifier) @call.name))
+        """,
     ),
     "java": LanguageConfig(
         name="java",
@@ -91,6 +113,10 @@ LANGUAGE_CONFIGS = {
         """,
         import_query="""
         (import_declaration) @import
+        """,
+        call_query="""
+        (method_invocation
+          name: (identifier) @call.name)
         """,
     ),
     "go": LanguageConfig(
@@ -109,6 +135,13 @@ LANGUAGE_CONFIGS = {
         """,
         import_query="""
         (import_declaration) @import
+        """,
+        call_query="""
+        (call_expression
+          function: (identifier) @call.name)
+        (call_expression
+          function: (selector_expression
+            field: (field_identifier) @call.name))
         """,
     ),
 }

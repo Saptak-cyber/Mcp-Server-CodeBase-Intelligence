@@ -73,12 +73,12 @@ async def main():
 
     try:
         # 1. index_codebase (with project param)
-        await run_tool("1. index_codebase", mcp, mcp._index_codebase, {
-            "path": project_path,
-            "languages": ["python"],
-            "exclude_patterns": ["venv", ".git", "__pycache__", "node_modules"],
-            "project": "codebase-intelligence",
-        })
+        # await run_tool("1. index_codebase", mcp, mcp._index_codebase, {
+        #     "path": project_path,
+        #     "languages": ["python"],
+        #     "exclude_patterns": ["venv", ".git", "__pycache__", "node_modules"],
+        #     "project": "codebase-intelligence",
+        # })
 
         # 2. semantic_search (with project param)
         await run_tool("2. semantic_search", mcp, mcp._semantic_search, {
@@ -87,9 +87,9 @@ async def main():
             "project": "codebase-intelligence",
         })
 
-        # 3. analyze_dependencies
+        # 3. analyze_dependencies (use directory so Function nodes + CALLS are created)
         await run_tool("3. analyze_dependencies", mcp, mcp._analyze_dependencies, {
-            "path": server_file,
+            "path": os.path.join(project_path, "src"),
             "language": "python",
             "depth": 2,
         })

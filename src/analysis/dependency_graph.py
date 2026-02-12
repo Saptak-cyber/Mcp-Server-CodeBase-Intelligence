@@ -25,6 +25,8 @@ class DependencyGraphAnalyzer:
             # Scan files
             files_processed = 0
             dependencies = []
+            total_functions = 0
+            total_calls = 0
 
             async for file_path, file_lang in FileUtils.scan_directory(path, [language]):
                 try:
@@ -43,6 +45,21 @@ class DependencyGraphAnalyzer:
                         await self._create_dependency(file_path, import_stmt)
                         dependencies.append({"from": file_path, "to": import_stmt})
 
+                    # Extract function definitions and call relationships
+                    functions, call_pairs = await self.parser.extract_function_calls(
+                        tree, file_lang, file_path
+                    )
+
+                    # Create Function nodes
+                    for func in functions:
+                        await self._create_function_node(func)
+                        total_functions += 1
+
+                    # Create CALLS relationships
+                    for call_pair in call_pairs:
+                        await self._create_call_relationship(call_pair)
+                        total_calls += 1
+
                     files_processed += 1
 
                 except Exception as e:
@@ -58,6 +75,8 @@ class DependencyGraphAnalyzer:
                 "success": True,
                 "files_processed": files_processed,
                 "dependencies_found": len(dependencies),
+                "functions_found": total_functions,
+                "call_relationships": total_calls,
                 "circular_dependencies": circular_deps,
                 "top_coupled_modules": coupling_scores[:10],
                 "graph_visualization": self._generate_mermaid_graph(dependencies),
@@ -131,6 +150,55 @@ class DependencyGraphAnalyzer:
             )
         except Exception as e:
             logger.warning("Failed to create dependency", error=str(e))
+
+    async def _create_function_node(self, func: Dict[str, Any]) -> None:
+        """Create Function node in Neo4j."""
+        try:
+            await self.storage.neo4j.execute_query(
+                """
+                MERGE (f:Function {name: $name, file_path: $file_path})
+                SET f.start_line = $start_line, f.end_line = $end_line
+                """,
+                {
+                    "name": func["name"],
+                    "file_path": func["file_path"],
+                    "start_line": func["start_line"],
+                    "end_line": func["end_line"],
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create function node: {func['name']}", error=str(e))
+
+    async def _create_call_relationship(self, call_pair: Dict[str, Any]) -> None:
+        """Create CALLS relationship between Function nodes."""
+        try:
+            # MERGE callee as a node too (it might be defined in another file)
+            await self.storage.neo4j.execute_query(
+                """
+                MERGE (callee:Function {name: $callee_name})
+                """,
+                {"callee_name": call_pair["callee"]},
+            )
+
+            # Create the CALLS relationship
+            await self.storage.neo4j.execute_query(
+                """
+                MATCH (caller:Function {name: $caller_name, file_path: $file_path})
+                MATCH (callee:Function {name: $callee_name})
+                MERGE (caller)-[:CALLS {file_path: $file_path, line: $line}]->(callee)
+                """,
+                {
+                    "caller_name": call_pair["caller"],
+                    "callee_name": call_pair["callee"],
+                    "file_path": call_pair["file_path"],
+                    "line": call_pair["line"],
+                },
+            )
+        except Exception as e:
+            logger.warning(
+                f"Failed to create call relationship: {call_pair['caller']} -> {call_pair['callee']}",
+                error=str(e),
+            )
 
     def _generate_mermaid_graph(self, dependencies: List[Dict[str, str]]) -> str:
         """Generate Mermaid diagram for dependencies."""
