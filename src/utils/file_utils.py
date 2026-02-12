@@ -15,7 +15,8 @@ class FileUtils:
     SUPPORTED_EXTENSIONS = {
         "python": [".py"],
         "javascript": [".js", ".jsx"],
-        "typescript": [".ts", ".tsx"],
+        "typescript": [".ts"],
+        "tsx": [".tsx"],
         "java": [".java"],
         "go": [".go"],
     }
@@ -63,6 +64,18 @@ class FileUtils:
         Yields:
             Tuple of (file_path, language)
         """
+        # Expand language aliases (e.g., "typescript" → ["typescript", "tsx"])
+        if languages:
+            from ..parsers.language_configs import LANGUAGE_ALIASES
+
+            expanded = set()
+            for lang in languages:
+                if lang in LANGUAGE_ALIASES:
+                    expanded.update(LANGUAGE_ALIASES[lang])
+                else:
+                    expanded.add(lang)
+            languages = list(expanded)
+
         exclude_patterns = exclude_patterns or [
             "node_modules",
             ".git",

@@ -113,9 +113,16 @@ LANGUAGE_CONFIGS = {
     ),
 }
 
+# Language aliases: when user requests 'typescript', also include 'tsx'
+LANGUAGE_ALIASES = {
+    "typescript": ["typescript", "tsx"],
+}
+
 
 def get_language_config(language: str) -> LanguageConfig:
     """Get language configuration."""
-    if language not in LANGUAGE_CONFIGS:
+    # tsx uses the same queries as typescript
+    config_key = language if language in LANGUAGE_CONFIGS else "typescript" if language == "tsx" else language
+    if config_key not in LANGUAGE_CONFIGS:
         raise ValueError(f"Unsupported language: {language}")
-    return LANGUAGE_CONFIGS[language]
+    return LANGUAGE_CONFIGS[config_key]

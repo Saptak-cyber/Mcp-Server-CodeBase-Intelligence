@@ -24,12 +24,14 @@ class TreeSitterManager:
             # For now, we'll use a simplified version
             import tree_sitter_python
             import tree_sitter_javascript
+            import tree_sitter_typescript
             import tree_sitter_java
             import tree_sitter_go
 
             self._languages["python"] = Language(tree_sitter_python.language())
             self._languages["javascript"] = Language(tree_sitter_javascript.language())
-            self._languages["typescript"] = Language(tree_sitter_javascript.language())
+            self._languages["typescript"] = Language(tree_sitter_typescript.language_typescript())
+            self._languages["tsx"] = Language(tree_sitter_typescript.language_tsx())
             self._languages["java"] = Language(tree_sitter_java.language())
             self._languages["go"] = Language(tree_sitter_go.language())
 
