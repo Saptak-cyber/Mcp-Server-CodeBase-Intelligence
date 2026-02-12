@@ -50,7 +50,7 @@ class MetricsCalculator:
             complexity_scores = [
                 {
                     "name": item.name,
-                    "type": item.classname or "function",
+                    "type": getattr(item, "classname", getattr(item, "type", "function")),
                     "complexity": item.complexity,
                     "line": item.lineno,
                 }

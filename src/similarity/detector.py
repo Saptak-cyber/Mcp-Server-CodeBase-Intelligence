@@ -26,21 +26,32 @@ class SimilarityDetector:
             duplicate_groups = []
 
             # Get all indexed code chunks for this path
-            # Query Qdrant for chunks
+            # Query Qdrant for chunks - limit to reasonable number
             results = await self.storage.qdrant.search(
                 query_vector=[0.0] * 768,  # Dummy vector, we'll compare all
-                top_k=1000,
+                top_k=100,  # Limit to avoid timeout
             )
 
+            # Filter results by path if it's a specific file
+            if path and not path.endswith('/'):
+                results = [r for r in results if path in r["payload"]["file_path"]]
+
+            # Limit comparisons to avoid timeout
+            max_comparisons = 50
+            comparisons_done = 0
+            
             # Group similar chunks
             for i, chunk1 in enumerate(results):
-                if i >= len(results) - 1:
+                if i >= len(results) - 1 or comparisons_done >= max_comparisons:
                     break
 
                 similar_chunks = [chunk1]
 
                 for chunk2 in results[i + 1 :]:
-                    # Calculate similarity (simplified - using score from Qdrant)
+                    if comparisons_done >= max_comparisons:
+                        break
+                        
+                    # Only compare different files
                     if chunk1["payload"]["file_path"] != chunk2["payload"]["file_path"]:
                         # Search for similarity
                         similar = await self._check_similarity(
@@ -48,6 +59,8 @@ class SimilarityDetector:
                             chunk2["payload"]["code"],
                             similarity_threshold,
                         )
+                        
+                        comparisons_done += 1
 
                         if similar:
                             similar_chunks.append(chunk2)
@@ -76,6 +89,7 @@ class SimilarityDetector:
                 "path": path,
                 "duplicate_groups_found": len(duplicate_groups),
                 "duplicates": duplicate_groups,
+                "note": f"Analyzed {len(results)} chunks with {comparisons_done} comparisons"
             }
 
         except Exception as e:
