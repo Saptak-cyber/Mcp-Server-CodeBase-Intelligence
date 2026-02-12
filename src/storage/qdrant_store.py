@@ -96,7 +96,11 @@ class QdrantStore:
         top_k: int = 10,
         filters: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Search for similar vectors."""
+        """Search for similar vectors using the new query_points API.
+        
+        Note: Qdrant client v1.12+ replaced search() with query_points().
+        See: https://qdrant.tech/blog/qdrant-1.10.x/
+        """
         if not self._enabled or not self.client:
             logger.warning("Qdrant not available")
             return []
@@ -110,9 +114,10 @@ class QdrantStore:
                 if conditions:
                     query_filter = Filter(must=conditions)
 
-            results = self.client.search(
+            # Use new query_points API instead of deprecated search()
+            results = self.client.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                query=query_vector,  # Changed from query_vector to query
                 limit=top_k,
                 query_filter=query_filter,
             )
@@ -123,7 +128,7 @@ class QdrantStore:
                     "score": hit.score,
                     "payload": hit.payload,
                 }
-                for hit in results
+                for hit in results.points  # Results are now in .points attribute
             ]
         except Exception as e:
             logger.error("Search failed", error=str(e))
