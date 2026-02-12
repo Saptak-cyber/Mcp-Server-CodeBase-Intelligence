@@ -1,6 +1,7 @@
 """Indexing tools for codebase."""
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -59,11 +60,23 @@ class IndexingTools:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise RuntimeError("git clone timed out after 120 seconds")
 
+    @staticmethod
+    def _derive_project_name(git_url: Optional[str], path: Optional[str]) -> str:
+        """Derive a project name from git URL or local path."""
+        if git_url:
+            # Extract repo name from URL: https://github.com/user/repo.git -> repo
+            name = git_url.rstrip("/").rstrip(".git").split("/")[-1]
+            return re.sub(r'[^\w\-.]', '_', name)
+        elif path:
+            return os.path.basename(os.path.normpath(path))
+        return "unknown"
+
     async def index_codebase(
         self,
         path: Optional[str] = None,
         git_url: Optional[str] = None,
         branch: Optional[str] = None,
+        project: Optional[str] = None,
         languages: Optional[List[str]] = None,
         exclude_patterns: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
@@ -91,6 +104,10 @@ class IndexingTools:
                     "error": "Either 'path' or 'git_url' must be provided",
                     "stats": stats,
                 }
+
+            # Derive project name
+            project_name = project or self._derive_project_name(git_url, path)
+            logger.info(f"Project name: {project_name}")
 
             if not os.path.isdir(index_path):
                 return {
@@ -148,6 +165,7 @@ class IndexingTools:
                                 "start_line": chunk["start_line"],
                                 "end_line": chunk["end_line"],
                                 "code": chunk["code"],
+                                "project": project_name,
                             }
                             for chunk in chunks
                         ]

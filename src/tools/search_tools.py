@@ -21,6 +21,7 @@ class SearchTools:
         query: str,
         language_filter: Optional[str] = None,
         top_k: int = 10,
+        project: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Perform semantic search on codebase."""
         try:
@@ -40,6 +41,8 @@ class SearchTools:
             filters = {}
             if language_filter:
                 filters["language"] = language_filter
+            if project:
+                filters["project"] = project
 
             # Search in Qdrant
             results = await self.storage.qdrant.search(
@@ -51,6 +54,7 @@ class SearchTools:
                 {
                     "file_path": r["payload"]["file_path"],
                     "language": r["payload"]["language"],
+                    "project": r["payload"].get("project", "unknown"),
                     "chunk_type": r["payload"]["chunk_type"],
                     "name": r["payload"].get("name", ""),
                     "lines": f"{r['payload']['start_line']}-{r['payload']['end_line']}",
@@ -80,6 +84,7 @@ class SearchTools:
         self,
         symbol_name: str,
         symbol_type: Optional[str] = None,
+        project: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Find symbol definitions and usages."""
         try:
@@ -90,6 +95,8 @@ class SearchTools:
             filters = {}
             if symbol_type:
                 filters["chunk_type"] = symbol_type
+            if project:
+                filters["project"] = project
 
             results = await self.storage.qdrant.search(
                 query_vector=query_vector, top_k=20, filters=filters

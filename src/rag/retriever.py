@@ -21,6 +21,7 @@ class ContextRetriever:
         question: str,
         top_k: int = 5,
         language_filter: Optional[str] = None,
+        project: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Retrieve relevant code contexts."""
         # Generate question embedding
@@ -30,6 +31,8 @@ class ContextRetriever:
         filters = {}
         if language_filter:
             filters["language"] = language_filter
+        if project:
+            filters["project"] = project
 
         # Search in Qdrant
         results = await self.storage.qdrant.search(
@@ -43,6 +46,7 @@ class ContextRetriever:
             {
                 "file_path": r["payload"]["file_path"],
                 "language": r["payload"]["language"],
+                "project": r["payload"].get("project", "unknown"),
                 "type": r["payload"]["chunk_type"],
                 "name": r["payload"].get("name", ""),
                 "lines": f"{r['payload']['start_line']}-{r['payload']['end_line']}",

@@ -37,7 +37,7 @@ class CodebaseIntelligenceMCP:
             return [
                 Tool(
                     name="index_codebase",
-                    description="Index a codebase directory or git repository for intelligent code analysis. Use 'path' for local directories, or 'git_url' for remote repositories (required when server is deployed remotely).",
+                    description="REQUIRED FIRST STEP: Index a codebase before using any other tools. Scans source files, parses them into functions/classes, generates vector embeddings, and stores them for search. Use 'path' for local directories or 'git_url' for remote GitHub repositories. Must be called before semantic_search, ask_codebase, or find_symbol will return results.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -60,24 +60,32 @@ class CodebaseIntelligenceMCP:
                                 "items": {"type": "string"},
                                 "description": "Patterns to exclude (e.g., node_modules, *.test.ts)",
                             },
+                            "project": {
+                                "type": "string",
+                                "description": "Project name to tag this codebase with. Auto-derived from git URL or path if not specified.",
+                            },
                         },
                     },
                 ),
                 Tool(
                     name="semantic_search",
-                    description="Search code semantically by meaning, not just text",
+                    description="Search indexed code by semantic meaning to find specific code snippets, functions, or patterns. Use this when looking for code that DOES something specific (e.g., 'find authentication middleware', 'database connection pooling', 'error handling for API calls'). Returns matching code with file paths, line numbers, and relevance scores. Requires index_codebase to be run first.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "query": {"type": "string", "description": "Search query"},
+                            "query": {"type": "string", "description": "Natural language description of the code you are looking for (e.g., 'function that validates email addresses')"},
                             "language_filter": {
                                 "type": "string",
-                                "description": "Filter by language",
+                                "description": "Filter by programming language (python, javascript, typescript, java, go)",
                             },
                             "top_k": {
                                 "type": "integer",
                                 "description": "Number of results",
                                 "default": 10,
+                            },
+                            "project": {
+                                "type": "string",
+                                "description": "Filter results to a specific project/codebase",
                             },
                         },
                         "required": ["query"],
@@ -85,12 +93,12 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="analyze_dependencies",
-                    description="Generate dependency graphs and detect circular dependencies",
+                    description="Analyze import/require statements to map dependencies between files and detect circular dependencies. Use this when asked about module relationships, import chains, or dependency issues. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Path to analyze"},
-                            "language": {"type": "string", "description": "Programming language"},
+                            "path": {"type": "string", "description": "Absolute path to the file or directory to analyze"},
+                            "language": {"type": "string", "description": "Programming language (python, javascript, typescript, java, go)"},
                             "depth": {
                                 "type": "integer",
                                 "description": "Max traversal depth",
@@ -102,7 +110,7 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="compute_metrics",
-                    description="Calculate code complexity and quality metrics",
+                    description="Calculate code quality metrics including cyclomatic complexity, lines of code, function count, and maintainability index. Use this when asked about code quality, complexity analysis, or technical debt assessment. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -116,7 +124,7 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="detect_duplicates",
-                    description="Find duplicate and similar code across the codebase",
+                    description="Detect duplicate or near-duplicate code blocks across files using similarity analysis. Use this when asked about code duplication, DRY violations, or copy-paste detection. Adjustable similarity threshold. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -132,7 +140,7 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="generate_docs",
-                    description="Auto-generate documentation from code",
+                    description="Auto-generate documentation from source code by analyzing function signatures, docstrings, class hierarchies, and module structure. Outputs markdown or HTML. Use when asked to create docs, README content, or API documentation. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -149,7 +157,7 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="suggest_refactorings",
-                    description="Get AI-powered refactoring suggestions",
+                    description="Analyze a file for code smells and suggest specific refactoring improvements such as extracting functions, simplifying conditionals, reducing nesting, or improving naming. Use when asked to review code quality or suggest improvements. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -160,13 +168,13 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="ask_codebase",
-                    description="Query your codebase in natural language",
+                    description="Answer high-level questions about the codebase architecture, workflows, and how components interact using RAG (retrieval-augmented generation). Use this for understanding questions like 'how does the auth flow work?', 'what's the data model?', or 'explain the payment processing pipeline'. Returns a synthesized answer with supporting code context. Requires index_codebase to be run first.",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "question": {
                                 "type": "string",
-                                "description": "Question about the codebase",
+                                "description": "Natural language question about the codebase (e.g., 'how does user authentication work?')",
                             },
                             "top_k": {
                                 "type": "integer",
@@ -175,7 +183,11 @@ class CodebaseIntelligenceMCP:
                             },
                             "language_filter": {
                                 "type": "string",
-                                "description": "Filter by language",
+                                "description": "Filter by programming language (python, javascript, typescript, java, go)",
+                            },
+                            "project": {
+                                "type": "string",
+                                "description": "Filter results to a specific project/codebase",
                             },
                         },
                         "required": ["question"],
@@ -183,13 +195,13 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="get_call_graph",
-                    description="Generate call graphs for functions",
+                    description="Trace which functions call a given function and what it calls, generating a call graph. Use when asked about function relationships, call chains, or 'what calls this function?' questions. Requires a local file path.",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "function_name": {
                                 "type": "string",
-                                "description": "Function to analyze",
+                                "description": "Name of the function to trace calls for",
                             },
                             "max_depth": {
                                 "type": "integer",
@@ -202,15 +214,19 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="find_symbol",
-                    description="Find symbol definitions and usages",
+                    description="Find where a specific function, class, or variable is defined and used across the indexed codebase. Use when asked 'where is X defined?', 'find the class Y', or 'show me all usages of Z'. Requires index_codebase to be run first.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "symbol_name": {"type": "string", "description": "Symbol to find"},
+                            "symbol_name": {"type": "string", "description": "Exact name of the function, class, or variable to find"},
                             "symbol_type": {
                                 "type": "string",
-                                "description": "Symbol type",
+                                "description": "Type of symbol to narrow the search",
                                 "enum": ["function", "class", "variable"],
+                            },
+                            "project": {
+                                "type": "string",
+                                "description": "Filter results to a specific project/codebase",
                             },
                         },
                         "required": ["symbol_name"],
@@ -266,6 +282,7 @@ class CodebaseIntelligenceMCP:
             path=args.get("path"),
             git_url=args.get("git_url"),
             branch=args.get("branch"),
+            project=args.get("project"),
             languages=args.get("languages"),
             exclude_patterns=args.get("exclude_patterns"),
         )
@@ -279,6 +296,7 @@ class CodebaseIntelligenceMCP:
             query=args["query"],
             language_filter=args.get("language_filter"),
             top_k=args.get("top_k", 10),
+            project=args.get("project"),
         )
 
     async def _analyze_dependencies(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -335,6 +353,7 @@ class CodebaseIntelligenceMCP:
             question=args["question"],
             top_k=args.get("top_k", 5),
             language_filter=args.get("language_filter"),
+            project=args.get("project"),
         )
 
     async def _get_call_graph(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -355,6 +374,7 @@ class CodebaseIntelligenceMCP:
         return await searcher.find_symbol(
             symbol_name=args["symbol_name"],
             symbol_type=args.get("symbol_type"),
+            project=args.get("project"),
         )
 
     async def initialize(self) -> None:

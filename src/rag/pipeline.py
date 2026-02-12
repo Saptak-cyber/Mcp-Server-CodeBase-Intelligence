@@ -23,13 +23,14 @@ class RAGPipeline:
         question: str,
         top_k: int = 5,
         language_filter: Optional[str] = None,
+        project: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Query the codebase with natural language."""
         try:
             logger.info(f"RAG query: {question}")
 
             # Retrieve relevant context
-            contexts = await self.retriever.retrieve(question, top_k, language_filter)
+            contexts = await self.retriever.retrieve(question, top_k, language_filter, project)
 
             # Format response
             formatted_response = await self.formatter.format(question, contexts)
