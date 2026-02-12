@@ -13,6 +13,8 @@ A production-grade Model Context Protocol (MCP) server providing advanced code i
 - 💬 **Natural Language Q&A** - Ask questions about your codebase in plain English
 - 🌳 **Call Graph Analysis** - Visualize function call relationships
 
+## Questions This MCP Tools Can Answer (See [Questions.md](./Questions.md) file)
+
 ## Supported Languages
 
 - JavaScript/TypeScript

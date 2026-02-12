@@ -69,3 +69,4 @@ build/
 *.bak
 temp/
 tmp/
+.kiro/settings/mcp.json
