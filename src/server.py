@@ -394,7 +394,7 @@ async def run_http_server(port: int) -> None:
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
         from starlette.routing import Route, Mount
-        from starlette.responses import JSONResponse
+        from starlette.responses import JSONResponse, Response
 
         # Initialize SSE transport with the messages path
         transport = SseServerTransport("/messages/")
@@ -409,18 +409,20 @@ async def run_http_server(port: int) -> None:
 
         async def handle_sse(request):
             """Handle SSE connection."""
-            # Use connect_sse to get bidirectional streams
-            async with transport.connect_sse(
-                request.scope,
-                request.receive,
-                request._send
-            ) as streams:
-                # streams is a tuple of (read_stream, write_stream)
-                await mcp.server.run(
-                    streams[0],
-                    streams[1],
-                    mcp.server.create_initialization_options(),
-                )
+            try:
+                async with transport.connect_sse(
+                    request.scope,
+                    request.receive,
+                    request._send
+                ) as streams:
+                    await mcp.server.run(
+                        streams[0],
+                        streams[1],
+                        mcp.server.create_initialization_options(),
+                    )
+            except Exception:
+                logger.warning("SSE connection closed")
+            return Response()
 
         app = Starlette(
             routes=[
