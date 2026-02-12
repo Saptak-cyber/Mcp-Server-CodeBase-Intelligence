@@ -393,8 +393,11 @@ async def run_http_server(port: int) -> None:
     try:
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
-        from starlette.routing import Route
+        from starlette.routing import Route, Mount
         from starlette.responses import JSONResponse
+
+        # Initialize SSE transport with the messages path
+        transport = SseServerTransport("/messages/")
 
         async def health_check(request):
             """Health check endpoint."""
@@ -406,17 +409,25 @@ async def run_http_server(port: int) -> None:
 
         async def handle_sse(request):
             """Handle SSE connection."""
-            async with SseServerTransport("/messages") as transport:
+            # Use connect_sse to get bidirectional streams
+            async with transport.connect_sse(
+                request.scope,
+                request.receive,
+                request._send
+            ) as streams:
+                # streams is a tuple of (read_stream, write_stream)
                 await mcp.server.run(
-                    transport.read_stream,
-                    transport.write_stream,
+                    streams[0],
+                    streams[1],
                     mcp.server.create_initialization_options(),
                 )
 
         app = Starlette(
             routes=[
                 Route("/health", health_check),
-                Route("/sse", handle_sse),
+                Route("/sse", handle_sse, methods=["GET"]),
+                # Mount the POST message handler
+                Mount("/messages/", app=transport.handle_post_message),
             ]
         )
 
