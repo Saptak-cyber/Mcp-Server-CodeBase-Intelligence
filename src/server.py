@@ -93,77 +93,83 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="analyze_dependencies",
-                    description="Analyze import/require statements to map dependencies between files and detect circular dependencies. Use this when asked about module relationships, import chains, or dependency issues. Requires a local file path.",
+                    description="Analyze import/require statements to map dependencies between files and detect circular dependencies. Use this when asked about module relationships, import chains, or dependency issues. Accepts a local path or git_url for remote repos.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Absolute path to the file or directory to analyze"},
+                            "path": {"type": "string", "description": "Local path to the file or directory to analyze"},
                             "language": {"type": "string", "description": "Programming language (python, javascript, typescript, java, go)"},
                             "depth": {
                                 "type": "integer",
                                 "description": "Max traversal depth",
                                 "default": 3,
                             },
+                            "git_url": {"type": "string", "description": "Git repository URL to clone and analyze"},
+                            "branch": {"type": "string", "description": "Branch to clone (default: main/default branch)"},
                         },
-                        "required": ["path", "language"],
+                        "required": ["language"],
                     },
                 ),
                 Tool(
                     name="compute_metrics",
-                    description="Calculate code quality metrics including cyclomatic complexity, lines of code, function count, and maintainability index. Use this when asked about code quality, complexity analysis, or technical debt assessment. Requires a local file path.",
+                    description="Calculate code quality metrics including cyclomatic complexity, lines of code, function count, and maintainability index. Use this when asked about code quality, complexity analysis, or technical debt assessment. Accepts a local path or git_url for remote repos.",
                     inputSchema={
                         "type": "object",
                         "properties": {
                             "file_path": {
                                 "type": "string",
-                                "description": "Path to file or directory",
+                                "description": "Local path to file or directory",
                             },
+                            "git_url": {"type": "string", "description": "Git repository URL to clone and analyze"},
+                            "branch": {"type": "string", "description": "Branch to clone (default: main/default branch)"},
                         },
-                        "required": ["file_path"],
                     },
                 ),
                 Tool(
                     name="detect_duplicates",
-                    description="Detect duplicate or near-duplicate code blocks across files using similarity analysis. Use this when asked about code duplication, DRY violations, or copy-paste detection. Adjustable similarity threshold. Requires a local file path.",
+                    description="Detect duplicate or near-duplicate code blocks across files using similarity analysis. Use this when asked about code duplication, DRY violations, or copy-paste detection. Adjustable similarity threshold. Accepts a local path or git_url for remote repos.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Path to analyze"},
+                            "path": {"type": "string", "description": "Local path to analyze"},
                             "similarity_threshold": {
                                 "type": "number",
                                 "description": "Similarity threshold (0-1)",
                                 "default": 0.85,
                             },
+                            "git_url": {"type": "string", "description": "Git repository URL to clone and analyze"},
+                            "branch": {"type": "string", "description": "Branch to clone (default: main/default branch)"},
                         },
-                        "required": ["path"],
                     },
                 ),
                 Tool(
                     name="generate_docs",
-                    description="Auto-generate documentation from source code by analyzing function signatures, docstrings, class hierarchies, and module structure. Outputs markdown or HTML. Use when asked to create docs, README content, or API documentation. Requires a local file path.",
+                    description="Auto-generate documentation from source code by analyzing function signatures, docstrings, class hierarchies, and module structure. Outputs markdown or HTML. Use when asked to create docs, README content, or API documentation. Accepts a local path or git_url for remote repos.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Path to document"},
+                            "path": {"type": "string", "description": "Local path to document"},
                             "format": {
                                 "type": "string",
                                 "description": "Output format",
                                 "enum": ["markdown", "html"],
                                 "default": "markdown",
                             },
+                            "git_url": {"type": "string", "description": "Git repository URL to clone and document"},
+                            "branch": {"type": "string", "description": "Branch to clone (default: main/default branch)"},
                         },
-                        "required": ["path"],
                     },
                 ),
                 Tool(
                     name="suggest_refactorings",
-                    description="Analyze a file for code smells and suggest specific refactoring improvements such as extracting functions, simplifying conditionals, reducing nesting, or improving naming. Use when asked to review code quality or suggest improvements. Requires a local file path.",
+                    description="Analyze a file for code smells and suggest specific refactoring improvements such as extracting functions, simplifying conditionals, reducing nesting, or improving naming. Use when asked to review code quality or suggest improvements. Accepts a local path or git_url for remote repos.",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "file_path": {"type": "string", "description": "File to analyze"},
+                            "file_path": {"type": "string", "description": "Local file to analyze"},
+                            "git_url": {"type": "string", "description": "Git repository URL to clone and analyze"},
+                            "branch": {"type": "string", "description": "Branch to clone (default: main/default branch)"},
                         },
-                        "required": ["file_path"],
                     },
                 ),
                 Tool(
@@ -195,7 +201,7 @@ class CodebaseIntelligenceMCP:
                 ),
                 Tool(
                     name="get_call_graph",
-                    description="Trace which functions call a given function and what it calls, generating a call graph. Use when asked about function relationships, call chains, or 'what calls this function?' questions. Requires a local file path.",
+                    description="Trace which functions call a given function and what it calls, generating a call graph. Use when asked about function relationships, call chains, or 'what calls this function?' questions.",
                     inputSchema={
                         "type": "object",
                         "properties": {
@@ -207,6 +213,10 @@ class CodebaseIntelligenceMCP:
                                 "type": "integer",
                                 "description": "Max depth",
                                 "default": 2,
+                            },
+                            "project": {
+                                "type": "string",
+                                "description": "Filter results to a specific project/codebase",
                             },
                         },
                         "required": ["function_name"],
@@ -305,9 +315,11 @@ class CodebaseIntelligenceMCP:
 
         analyzer = AnalysisTools(self.storage)
         return await analyzer.analyze_dependencies(
-            path=args["path"],
+            path=args.get("path"),
             language=args["language"],
             depth=args.get("depth", 3),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
         )
 
     async def _compute_metrics(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -315,7 +327,11 @@ class CodebaseIntelligenceMCP:
         from .tools.analysis_tools import AnalysisTools
 
         analyzer = AnalysisTools(self.storage)
-        return await analyzer.compute_metrics(file_path=args["file_path"])
+        return await analyzer.compute_metrics(
+            file_path=args.get("file_path"),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
+        )
 
     async def _detect_duplicates(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Detect duplicate code."""
@@ -323,8 +339,10 @@ class CodebaseIntelligenceMCP:
 
         analyzer = AnalysisTools(self.storage)
         return await analyzer.detect_duplicates(
-            path=args["path"],
+            path=args.get("path"),
             similarity_threshold=args.get("similarity_threshold", 0.85),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
         )
 
     async def _generate_docs(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -333,8 +351,10 @@ class CodebaseIntelligenceMCP:
 
         analyzer = AnalysisTools(self.storage)
         return await analyzer.generate_docs(
-            path=args["path"],
+            path=args.get("path"),
             format=args.get("format", "markdown"),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
         )
 
     async def _suggest_refactorings(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -342,7 +362,11 @@ class CodebaseIntelligenceMCP:
         from .tools.analysis_tools import AnalysisTools
 
         analyzer = AnalysisTools(self.storage)
-        return await analyzer.suggest_refactorings(file_path=args["file_path"])
+        return await analyzer.suggest_refactorings(
+            file_path=args.get("file_path"),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
+        )
 
     async def _ask_codebase(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Answer questions about codebase."""
@@ -364,6 +388,7 @@ class CodebaseIntelligenceMCP:
         return await analyzer.get_call_graph(
             function_name=args["function_name"],
             max_depth=args.get("max_depth", 2),
+            project=args.get("project"),
         )
 
     async def _find_symbol(self, args: Dict[str, Any]) -> Dict[str, Any]:
