@@ -37,11 +37,19 @@ class CodebaseIntelligenceMCP:
             return [
                 Tool(
                     name="index_codebase",
-                    description="Index a codebase directory for intelligent code analysis",
+                    description="Index a codebase directory or git repository for intelligent code analysis. Use 'path' for local directories, or 'git_url' for remote repositories (required when server is deployed remotely).",
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Path to codebase directory"},
+                            "path": {"type": "string", "description": "Path to local codebase directory"},
+                            "git_url": {
+                                "type": "string",
+                                "description": "Git repository URL to clone and index (e.g., https://github.com/user/repo.git)",
+                            },
+                            "branch": {
+                                "type": "string",
+                                "description": "Branch to clone (default: main/default branch)",
+                            },
                             "languages": {
                                 "type": "array",
                                 "items": {"type": "string"},
@@ -53,7 +61,6 @@ class CodebaseIntelligenceMCP:
                                 "description": "Patterns to exclude (e.g., node_modules, *.test.ts)",
                             },
                         },
-                        "required": ["path"],
                     },
                 ),
                 Tool(
@@ -256,7 +263,9 @@ class CodebaseIntelligenceMCP:
 
         indexer = IndexingTools(self.storage)
         return await indexer.index_codebase(
-            path=args["path"],
+            path=args.get("path"),
+            git_url=args.get("git_url"),
+            branch=args.get("branch"),
             languages=args.get("languages"),
             exclude_patterns=args.get("exclude_patterns"),
         )
