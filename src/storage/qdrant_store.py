@@ -12,6 +12,7 @@ from qdrant_client.models import (
     Filter,
     FieldCondition,
     MatchValue,
+    PayloadSchemaType,
 )
 from ..utils.logging import get_logger
 from ..config import get_settings
@@ -59,6 +60,17 @@ class QdrantStore:
                     collection_name=self.collection_name,
                     vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE),
                 )
+
+            # Ensure payload indexes exist for filterable fields
+            for field in ["project", "language", "chunk_type"]:
+                try:
+                    self.client.create_payload_index(
+                        collection_name=self.collection_name,
+                        field_name=field,
+                        field_schema=PayloadSchemaType.KEYWORD,
+                    )
+                except Exception:
+                    pass  # Index already exists
 
             self._initialized = True
             logger.info("Qdrant store initialized")
