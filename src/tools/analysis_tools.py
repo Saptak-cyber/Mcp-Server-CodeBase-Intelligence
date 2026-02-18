@@ -109,7 +109,7 @@ class AnalysisTools:
     ) -> Dict[str, Any]:
         """Get call graph for a function."""
         try:
-            return await self.dependency_analyzer.get_call_graph(function_name, max_depth)
+            return await self.dependency_analyzer.get_call_graph(function_name, max_depth, project)
         except Exception as e:
             logger.error("Call graph generation failed", error=str(e))
             return {"success": False, "error": str(e)}

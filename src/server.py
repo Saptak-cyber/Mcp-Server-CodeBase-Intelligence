@@ -62,9 +62,10 @@ class CodebaseIntelligenceMCP:
                             },
                             "project": {
                                 "type": "string",
-                                "description": "Project name to tag this codebase with. Auto-derived from git URL or path if not specified.",
+                                "description": "Project name to tag this codebase with",
                             },
                         },
+                        "required": ["languages", "exclude_patterns", "project"],
                     },
                 ),
                 Tool(

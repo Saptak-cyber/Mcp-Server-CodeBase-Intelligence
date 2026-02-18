@@ -27,7 +27,7 @@ class SearchTools:
         try:
             # Check cache first
             cache_key = self.storage.cache.make_cache_key(
-                "search", query, language_filter or "all", str(top_k)
+                "search", query, language_filter or "all", str(top_k), project or "all"
             )
             cached = await self.storage.cache.get(cache_key)
             if cached:

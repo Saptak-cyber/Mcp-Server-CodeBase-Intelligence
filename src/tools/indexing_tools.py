@@ -52,8 +52,8 @@ class IndexingTools:
 
         try:
             async with clone_or_use_path(path, git_url, branch) as index_path:
-                # Derive project name
-                project_name = project or derive_project_name(git_url, path)
+                # Use provided project name
+                project_name = project
                 logger.info(f"Project name: {project_name}")
 
                 if not os.path.isdir(index_path):
@@ -64,6 +64,13 @@ class IndexingTools:
                     }
 
                 logger.info(f"Starting indexing of {index_path}")
+
+                # Delete old vectors for this project before re-indexing (prevent duplicates)
+                try:
+                    await self.storage.qdrant.delete_by_filter({"project": project_name})
+                    logger.info(f"Cleared old vectors for project: {project_name}")
+                except Exception as e:
+                    logger.warning(f"Could not clear old vectors", error=str(e))
 
                 # Default exclude patterns for cloned repos
                 if git_url and not exclude_patterns:
@@ -100,7 +107,12 @@ class IndexingTools:
                         if chunks:
                             # Generate embeddings
                             texts = [chunk["code"] for chunk in chunks]
-                            vectors = await self.embedder.embed_batch(texts)
+                            vectors, failed_indices = await self.embedder.embed_batch(texts)
+                            
+                            # Skip failed chunks
+                            if failed_indices:
+                                chunks = [c for i, c in enumerate(chunks) if i not in failed_indices]
+                                logger.warning(f"Skipped {len(failed_indices)} chunks due to embedding failures")
 
                             # Prepare payloads
                             payloads = [

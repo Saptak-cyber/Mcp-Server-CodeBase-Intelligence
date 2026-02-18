@@ -4,7 +4,7 @@ Based on: https://huggingface.co/docs/inference-providers/
 Uses the new Inference Providers API (replaces deprecated api-inference.huggingface.co)
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from tenacity import retry, stop_after_attempt, wait_exponential
 from huggingface_hub import InferenceClient
 from ..config import get_settings
@@ -76,47 +76,46 @@ class EmbeddingGenerator:
             logger.error(f"Embedding generation failed for text: {text[:50]}...", error=str(e))
             raise
 
-    async def embed_batch(self, texts: List[str], batch_size: int = 32) -> List[List[float]]:
-        """Generate embeddings for multiple texts in batches.
+    async def embed_batch(self, texts: List[str], batch_size: int = 32) -> Tuple[List[List[float]], List[int]]:
+        """Generate embeddings for multiple texts concurrently.
         
         Args:
             texts: List of input texts to embed
-            batch_size: Number of texts to process per API call (default: 32)
+            batch_size: Number of texts to process concurrently (default: 32)
             
         Returns:
-            List of embedding vectors, one per input text
-            
-        Note:
-            Falls back to individual embedding on batch failure.
-            Uses zero vector as last resort fallback.
+            Tuple of (embeddings, failed_indices) where:
+            - embeddings: list of embedding vectors for successful texts
+            - failed_indices: list of indices that failed (skipped)
         """
-        all_embeddings = []
+        import asyncio
+        
+        all_embeddings: List[List[float]] = []
+        failed_indices: List[int] = []
 
         for i in range(0, len(texts), batch_size):
             batch = texts[i : i + batch_size]
+            
+            # Use asyncio.gather for concurrent embedding within each batch
+            async def _safe_embed(text: str, idx: int) -> Tuple[Optional[List[float]], int]:
+                try:
+                    emb = await self.embed(text)
+                    return emb, idx
+                except Exception as e:
+                    logger.error(f"Embedding failed for index {idx}", error=str(e))
+                    return None, idx
+            
+            tasks = [_safe_embed(text, i + j) for j, text in enumerate(batch)]
+            results = await asyncio.gather(*tasks)
+            
+            batch_embeddings = []
+            for emb, idx in results:
+                if emb is not None:
+                    batch_embeddings.append(emb)
+                else:
+                    failed_indices.append(idx)
+            
+            all_embeddings.extend(batch_embeddings)
+            logger.info(f"Generated {len(batch_embeddings)} embeddings (batch {i//batch_size + 1})")
 
-            try:
-                # Process batch - InferenceClient handles batching internally
-                for text in batch:
-                    try:
-                        emb = await self.embed(text)
-                        all_embeddings.append(emb)
-                    except Exception as e:
-                        logger.error(f"Individual embedding failed in batch", error=str(e))
-                        # Use zero vector as fallback (768 is common for sentence-transformers)
-                        all_embeddings.append([0.0] * 768)
-
-                logger.info(f"Generated {len(batch)} embeddings (batch {i//batch_size + 1})")
-
-            except Exception as e:
-                logger.error("Batch processing failed", error=str(e))
-                # Fallback: try individual embeddings
-                for text in batch:
-                    try:
-                        emb = await self.embed(text)
-                        all_embeddings.append(emb)
-                    except Exception as e2:
-                        logger.error("Individual embedding failed", error=str(e2))
-                        all_embeddings.append([0.0] * 768)
-
-        return all_embeddings
+        return all_embeddings, failed_indices

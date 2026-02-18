@@ -1,6 +1,6 @@
 """Dependency graph analysis using Neo4j."""
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from ..storage.storage_manager import StorageManager
 from ..parsers.tree_sitter_manager import TreeSitterManager
 from ..utils.file_utils import FileUtils
@@ -86,25 +86,51 @@ class DependencyGraphAnalyzer:
             logger.error("Dependency analysis failed", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def get_call_graph(self, function_name: str, max_depth: int = 2) -> Dict[str, Any]:
+    async def get_call_graph(
+        self, function_name: str, max_depth: int = 2, project: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Generate call graph for a function."""
         try:
-            # Query Neo4j for function calls
-            query = f"""
-            MATCH path = (f:Function {{name: $name}})-[:CALLS*1..{max_depth}]->(called)
-            RETURN path
-            LIMIT 100
-            """
+            # Build query with optional project filter
+            if project:
+                query = f"""
+                MATCH path = (f:Function {{name: $name}})-[:CALLS*1..{max_depth}]->(called)
+                WHERE any(r IN relationships(path) WHERE r.file_path IS NOT NULL)
+                RETURN [n IN nodes(path) | {{name: n.name, file_path: n.file_path, start_line: n.start_line, end_line: n.end_line}}] as nodes,
+                       [r IN relationships(path) | {{file_path: r.file_path, line: r.line}}] as rels
+                LIMIT 100
+                """
+            else:
+                query = f"""
+                MATCH path = (f:Function {{name: $name}})-[:CALLS*1..{max_depth}]->(called)
+                RETURN [n IN nodes(path) | {{name: n.name, file_path: n.file_path, start_line: n.start_line, end_line: n.end_line}}] as nodes,
+                       [r IN relationships(path) | {{file_path: r.file_path, line: r.line}}] as rels
+                LIMIT 100
+                """
 
             results = await self.storage.neo4j.execute_query(query, {"name": function_name})
 
-            # Format results
-            call_graph = {"root": function_name, "calls": []}
+            # Format results into structured call chains
+            call_graph: Dict[str, Any] = {"root": function_name, "calls": []}
+            seen_edges: set = set()
 
             for result in results:
-                path = result.get("path")
-                if path:
-                    call_graph["calls"].append(self._format_path(path))  # type: ignore[attr-defined]
+                nodes = result.get("nodes", [])
+                rels = result.get("rels", [])
+                for i, rel in enumerate(rels):
+                    if i + 1 < len(nodes):
+                        caller = nodes[i].get("name", "")
+                        callee = nodes[i + 1].get("name", "")
+                        edge_key = f"{caller}->{callee}"
+                        if edge_key not in seen_edges:
+                            seen_edges.add(edge_key)
+                            call_graph["calls"].append({
+                                "caller": caller,
+                                "callee": callee,
+                                "caller_file": nodes[i].get("file_path"),
+                                "callee_file": nodes[i + 1].get("file_path"),
+                                "line": rel.get("line"),
+                            })
 
             return {
                 "success": True,
@@ -118,14 +144,13 @@ class DependencyGraphAnalyzer:
             return {"success": False, "error": str(e)}
 
     async def _create_file_node(self, file_path: str, language: str, size: int) -> None:
-        """Create file node in Neo4j."""
-        await self.storage.neo4j.create_node(
-            "File",
-            {
-                "path": file_path,
-                "language": language,
-                "size": size,
-            },
+        """Create or update file node in Neo4j using MERGE to avoid duplicates."""
+        await self.storage.neo4j.execute_query(
+            """
+            MERGE (f:File {path: $path})
+            SET f.language = $language, f.size = $size
+            """,
+            {"path": file_path, "language": language, "size": size},
         )
 
     async def _create_dependency(self, from_file: str, to_module: str) -> None:
@@ -215,25 +240,20 @@ class DependencyGraphAnalyzer:
     def _generate_call_graph_mermaid(self, call_graph: Dict[str, Any]) -> str:
         """Generate Mermaid diagram for call graph."""
         lines = ["graph TD"]
-        root = self._sanitize_node_name(call_graph["root"])
 
-        for call in call_graph.get("calls", [])[:20]:
-            if isinstance(call, str):
-                target = self._sanitize_node_name(call)
-                lines.append(f"    {root} --> {target}")
+        for call in call_graph.get("calls", [])[:30]:
+            if isinstance(call, dict):
+                caller = self._sanitize_node_name(call.get("caller", ""))
+                callee = self._sanitize_node_name(call.get("callee", ""))
+                if caller and callee:
+                    lines.append(f"    {caller} --> {callee}")
 
         return "\n".join(lines)
 
     def _sanitize_node_name(self, name: str) -> str:
         """Sanitize node name for Mermaid."""
-        # Remove special characters and paths
         import os
 
         name = os.path.basename(name)
         name = name.replace(".", "_").replace("/", "_").replace("-", "_")
-        return name[:50]  # Limit length
-
-    def _format_path(self, path: Any) -> str:
-        """Format Neo4j path result."""
-        # Simplified formatting
-        return str(path)
+        return name[:50]
